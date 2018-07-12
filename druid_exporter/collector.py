@@ -37,13 +37,11 @@ class DruidCollector(object):
         # it is necessary to split the data structure by daemon.
         self.supported_metric_names = {
             'middlemanager': {
+                'jetty/numOpenConnections' : None,
                 'jvm/pool/committed': ['poolKind', 'poolName'],
                 'jvm/pool/init': ['poolKind', 'poolName'],
                 'jvm/pool/max': ['poolKind', 'poolName'],
                 'jvm/pool/used': ['poolKind', 'poolName'],
-                'jvm/bufferpool/count': ['bufferPoolName'],
-                'jvm/bufferpool/used': ['bufferPoolName'],
-                'jvm/bufferpool/capacity': ['bufferPoolName'],
                 'jvm/mem/init': ['memKind'],
                 'jvm/mem/max': ['memKind'],
                 'jvm/mem/used': ['memKind'],
@@ -52,6 +50,7 @@ class DruidCollector(object):
                 'jvm/gc/time': ['gcName'],
             },
             'broker': {
+                'jetty/numOpenConnections': None,
                 'query/time': ['dataSource'],
                 'query/bytes': ['dataSource'],
                 'query/node/time': None,
@@ -72,9 +71,6 @@ class DruidCollector(object):
                 'jvm/pool/init': ['poolKind', 'poolName'],
                 'jvm/pool/max': ['poolKind', 'poolName'],
                 'jvm/pool/used': ['poolKind', 'poolName'],
-                'jvm/bufferpool/count': ['bufferPoolName'],
-                'jvm/bufferpool/used': ['bufferPoolName'],
-                'jvm/bufferpool/capacity': ['bufferPoolName'],
                 'jvm/mem/init': ['memKind'],
                 'jvm/mem/max': ['memKind'],
                 'jvm/mem/used': ['memKind'],
@@ -83,6 +79,7 @@ class DruidCollector(object):
                 'jvm/gc/time': ['gcName'],
             },
             'historical': {
+                'jetty/numOpenConnections': None,
                 'query/time': ['dataSource'],
                 'query/bytes': ['dataSource'],
                 'query/cpu/time': ['dataSource'],
@@ -108,9 +105,6 @@ class DruidCollector(object):
                 'jvm/pool/init': None,
                 'jvm/pool/max': None,
                 'jvm/pool/used': None,
-                'jvm/bufferpool/count': ['bufferPoolName'],
-                'jvm/bufferpool/used': ['bufferPoolName'],
-                'jvm/bufferpool/capacity': ['bufferPoolName'],
                 'jvm/mem/init': None,
                 'jvm/mem/max': None,
                 'jvm/mem/used': None,
@@ -119,6 +113,7 @@ class DruidCollector(object):
                 'jvm/gc/time': None,
             },
             'coordinator': {
+                'jetty/numOpenConnections': None,
                 'segment/count': ['dataSource'],
                 'segment/assigned/count': ['tier'],
                 'segment/moved/count': ['tier'],
@@ -136,9 +131,6 @@ class DruidCollector(object):
                 'jvm/pool/init': ['poolKind', 'poolName'],
                 'jvm/pool/max': ['poolKind', 'poolName'],
                 'jvm/pool/used': ['poolKind', 'poolName'],
-                'jvm/bufferpool/count': ['bufferPoolName'],
-                'jvm/bufferpool/used': ['bufferPoolName'],
-                'jvm/bufferpool/capacity': ['bufferPoolName'],
                 'jvm/mem/init': ['memKind'],
                 'jvm/mem/max': ['memKind'],
                 'jvm/mem/used': ['memKind'],
@@ -147,6 +139,7 @@ class DruidCollector(object):
                 'jvm/gc/time': ['gcName'],
             },
             'peon': {
+                'jetty/numOpenConnections': None,
                 'query/time': ['dataSource'],
                 'query/bytes': ['dataSource'],
                 'segment/scan/pending': None,
@@ -224,15 +217,13 @@ class DruidCollector(object):
             'jvm/pool/init',
             'jvm/pool/max',
             'jvm/pool/used',
-            'jvm/bufferpool/count',
-            'jvm/bufferpool/used',
-            'jvm/bufferpool/capacity',
             'jvm/mem/init',
             'jvm/mem/max',
             'jvm/mem/used',
             'jvm/mem/committed',
             'jvm/gc/count',
-            'jvm/gc/time'
+            'jvm/gc/time',
+            'jetty/numOpenConnections',
         ])
 
     @staticmethod
@@ -241,6 +232,9 @@ class DruidCollector(object):
 
     def _get_general_counters(self, daemon):
         return {
+            'jetty/numOpenConnections': GaugeMetricFamily(
+               'druid_' + daemon + '_jetty_num_connections',
+               'Number of open connections.'),
             'jvm/pool/committed': GaugeMetricFamily(
                 'druid_' + daemon + '_jvm_pool_committed',
                 'Number of Committed pool.',
@@ -257,18 +251,6 @@ class DruidCollector(object):
                 'druid_' + daemon + '_jvm_pool_used',
                 'Number of Pool used.',
                 labels=['poolKind', 'poolName']),
-            'jvm/bufferpool/count': GaugeMetricFamily(
-                'druid_' + daemon + '_jvm_bufferpool_count',
-                'Number of Bufferpool count.',
-                labels=['bufferPoolName']),
-            'jvm/bufferpool/used': GaugeMetricFamily(
-                'druid_' + daemon + '_jvm_bufferpool_used',
-                'Number of Bufferpool used.',
-                labels=['bufferPoolName']),
-            'jvm/bufferpool/capacity': GaugeMetricFamily(
-                'druid_' + daemon + '_jvm_bufferpool_capacity',
-                'Number of Bufferpool capacity.',
-                labels=['bufferPoolName']),
             'jvm/mem/init': GaugeMetricFamily(
                 'druid_' + daemon + '_jvm_mem_init',
                 'Number of Initial memory.',
