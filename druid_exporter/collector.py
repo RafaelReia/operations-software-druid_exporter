@@ -19,13 +19,12 @@ from collections import defaultdict
 from prometheus_client.core import (CounterMetricFamily, GaugeMetricFamily,
                                     HistogramMetricFamily, Summary)
 
-
 log = logging.getLogger(__name__)
 
 
 class DruidCollector(object):
     scrape_duration = Summary(
-            'druid_scrape_duration_seconds', 'Druid scrape duration')
+        'druid_scrape_duration_seconds', 'Druid scrape duration')
 
     def __init__(self):
         # Datapoints successfully registered
@@ -37,9 +36,31 @@ class DruidCollector(object):
         # Due to the fact that metric names are not unique (like segment/count),
         # it is necessary to split the data structure by daemon.
         self.supported_metric_names = {
+            'middlemanager': {
+                'jvm/pool/committed': ['poolKind', 'poolName'],
+                'jvm/pool/init': ['poolKind', 'poolName'],
+                'jvm/pool/max': ['poolKind', 'poolName'],
+                'jvm/pool/used': ['poolKind', 'poolName'],
+                'jvm/bufferpool/count': ['bufferPoolName'],
+                'jvm/bufferpool/used': ['bufferPoolName'],
+                'jvm/bufferpool/capacity': ['bufferPoolName'],
+                'jvm/mem/init': ['memKind'],
+                'jvm/mem/max': ['memKind'],
+                'jvm/mem/used': ['memKind'],
+                'jvm/mem/committed': ['memKind'],
+                'jvm/gc/count': ['gcName'],
+                'jvm/gc/time': ['gcName'],
+            },
             'broker': {
                 'query/time': ['dataSource'],
                 'query/bytes': ['dataSource'],
+                'query/node/time': None,
+                'query/node/bytes': None,
+                'query/node/ttfb': None,
+                'query/intervalChunk/time': None,
+                'query/success/count': None,
+                'query/failed/count': None,
+                'query/interrupted/count': None,
                 'query/cache/total/numEntries': None,
                 'query/cache/total/sizeBytes': None,
                 'query/cache/total/hits': None,
@@ -47,10 +68,30 @@ class DruidCollector(object):
                 'query/cache/total/evictions': None,
                 'query/cache/total/timeouts': None,
                 'query/cache/total/errors': None,
+                'jvm/pool/committed': ['poolKind', 'poolName'],
+                'jvm/pool/init': ['poolKind', 'poolName'],
+                'jvm/pool/max': ['poolKind', 'poolName'],
+                'jvm/pool/used': ['poolKind', 'poolName'],
+                'jvm/bufferpool/count': ['bufferPoolName'],
+                'jvm/bufferpool/used': ['bufferPoolName'],
+                'jvm/bufferpool/capacity': ['bufferPoolName'],
+                'jvm/mem/init': ['memKind'],
+                'jvm/mem/max': ['memKind'],
+                'jvm/mem/used': ['memKind'],
+                'jvm/mem/committed': ['memKind'],
+                'jvm/gc/count': ['gcName'],
+                'jvm/gc/time': ['gcName'],
             },
             'historical': {
                 'query/time': ['dataSource'],
                 'query/bytes': ['dataSource'],
+                'query/cpu/time': ['dataSource'],
+                'query/segment/time': None,
+                'query/wait/time': None,
+                'query/success/count': None,
+                'query/failed/count': None,
+                'query/interrupted/count': None,
+                'query/segmentAndCache/time': None,
                 'query/cache/total/numEntries': None,
                 'query/cache/total/sizeBytes': None,
                 'query/cache/total/hits': None,
@@ -61,7 +102,21 @@ class DruidCollector(object):
                 'segment/count': ['tier', 'dataSource'],
                 'segment/max': None,
                 'segment/used': ['tier', 'dataSource'],
+                'segment/usedPercent': ['tier', 'dataSource'],
                 'segment/scan/pending': None,
+                'jvm/pool/committed': None,
+                'jvm/pool/init': None,
+                'jvm/pool/max': None,
+                'jvm/pool/used': None,
+                'jvm/bufferpool/count': ['bufferPoolName'],
+                'jvm/bufferpool/used': ['bufferPoolName'],
+                'jvm/bufferpool/capacity': ['bufferPoolName'],
+                'jvm/mem/init': None,
+                'jvm/mem/max': None,
+                'jvm/mem/used': None,
+                'jvm/mem/committed': None,
+                'jvm/gc/count': None,
+                'jvm/gc/time': None,
             },
             'coordinator': {
                 'segment/count': ['dataSource'],
@@ -77,10 +132,28 @@ class DruidCollector(object):
                 'segment/size': ['dataSource'],
                 'segment/unavailable/count': ['dataSource'],
                 'segment/underReplicated/count': ['tier', 'dataSource'],
+                'jvm/pool/committed': ['poolKind', 'poolName'],
+                'jvm/pool/init': ['poolKind', 'poolName'],
+                'jvm/pool/max': ['poolKind', 'poolName'],
+                'jvm/pool/used': ['poolKind', 'poolName'],
+                'jvm/bufferpool/count': ['bufferPoolName'],
+                'jvm/bufferpool/used': ['bufferPoolName'],
+                'jvm/bufferpool/capacity': ['bufferPoolName'],
+                'jvm/mem/init': ['memKind'],
+                'jvm/mem/max': ['memKind'],
+                'jvm/mem/used': ['memKind'],
+                'jvm/mem/committed': ['memKind'],
+                'jvm/gc/count': ['gcName'],
+                'jvm/gc/time': ['gcName'],
             },
             'peon': {
                 'query/time': ['dataSource'],
                 'query/bytes': ['dataSource'],
+                'segment/scan/pending': None,
+                'query/wait/time': None,
+                'query/success/count': None,
+                'query/failed/count': None,
+                'query/interrupted/count': None,
                 'ingest/events/thrownAway': ['dataSource'],
                 'ingest/events/unparseable': ['dataSource'],
                 'ingest/events/processed': ['dataSource'],
@@ -147,11 +220,80 @@ class DruidCollector(object):
             'ingest/persists/failed',
             'ingest/handoff/failed',
             'ingest/handoff/count',
+            'jvm/pool/committed',
+            'jvm/pool/init',
+            'jvm/pool/max',
+            'jvm/pool/used',
+            'jvm/bufferpool/count',
+            'jvm/bufferpool/used',
+            'jvm/bufferpool/capacity',
+            'jvm/mem/init',
+            'jvm/mem/max',
+            'jvm/mem/used',
+            'jvm/mem/committed',
+            'jvm/gc/count',
+            'jvm/gc/time'
         ])
 
     @staticmethod
     def sanitize_field(datapoint_field):
         return datapoint_field.replace('druid/', '').lower()
+
+    def _get_general_counters(self, daemon):
+        return {
+            'jvm/pool/committed': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_pool_committed',
+                'Number of Committed pool.',
+                labels=['poolKind', 'poolName']),
+            'jvm/pool/init': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_pool_init',
+                'Number of Initial pool.',
+                labels=['poolKind', 'poolName']),
+            'jvm/pool/max': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_pool_max',
+                'Number of Max pool.',
+                labels=['poolKind', 'poolName']),
+            'jvm/pool/used': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_pool_used',
+                'Number of Pool used.',
+                labels=['poolKind', 'poolName']),
+            'jvm/bufferpool/count': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_bufferpool_count',
+                'Number of Bufferpool count.',
+                labels=['bufferPoolName']),
+            'jvm/bufferpool/used': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_bufferpool_used',
+                'Number of Bufferpool used.',
+                labels=['bufferPoolName']),
+            'jvm/bufferpool/capacity': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_bufferpool_capacity',
+                'Number of Bufferpool capacity.',
+                labels=['bufferPoolName']),
+            'jvm/mem/init': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_mem_init',
+                'Number of Initial memory.',
+                labels=['memKind']),
+            'jvm/mem/max': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_mem_max',
+                'Number of Max memory.',
+                labels=['memKind']),
+            'jvm/mem/used': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_mem_used',
+                'Number of Used memory.',
+                labels=['memKind']),
+            'jvm/mem/committed': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_mem_committed',
+                'Number of Committed memory.',
+                labels=['memKind']),
+            'jvm/gc/count': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_gc_count',
+                'Number of Garbage collection count.',
+                labels=['gcName']),
+            'jvm/gc/time': GaugeMetricFamily(
+                'druid_' + daemon + '_jvm_gc_time',
+                'Number of Garbage collection time.',
+                labels=['gcName']),
+        }
 
     def _get_realtime_counters(self):
         return {
@@ -202,6 +344,28 @@ class DruidCollector(object):
                labels=['datasource']),
         }
 
+    def _get_query_counters(self):
+        return {
+            'query/success/count': GaugeMetricFamily(
+                'druid_broker_query_success_count',
+                'Number of success queries.'),
+            'query/failed/count': GaugeMetricFamily(
+                'druid_broker_query_failed_count',
+                'Number of failed queries'),
+            'query/interrupted/count': GaugeMetricFamily(
+                'druid_broker_query_interrupted_count',
+                'Number of interrupted queries.'),
+            'query/node/time': GaugeMetricFamily(
+                'druid_broker_query_node_time_ms',
+                'Number of query time.'),
+            'query/node/bytes': GaugeMetricFamily(
+                'druid_broker_query_node_bytes',
+                'Number of query bytes'),
+            'query/node/ttfb': GaugeMetricFamily(
+                'druid_broker_query_node_ttfb_ms',
+                'Time to first byte..'),
+            }
+
     def _get_cache_counters(self, daemon):
         return {
             'query/cache/total/numEntries': GaugeMetricFamily(
@@ -243,6 +407,15 @@ class DruidCollector(object):
             'segment/scan/pending': GaugeMetricFamily(
                'druid_historical_segment_scan_pending',
                'Number of segments in queue waiting to be scanned.'),
+            'query/success/count': GaugeMetricFamily(
+               'druid_historical_query_success_count',
+               'Number of success queries.'),
+            'query/failed/count': GaugeMetricFamily(
+               'druid_historical_query_failed_count',
+               'Number of failed queries'),
+            'query/interrupted/count': GaugeMetricFamily(
+               'druid_historical_query_interrupted_count',
+               'Number of interrupted queries.'),
             }
 
     def _get_coordinator_counters(self):
@@ -368,7 +541,7 @@ class DruidCollector(object):
             if bucket not in stored_buckets:
                 stored_buckets[bucket] = 0
             if bucket != 'sum' and metric_value <= float(bucket):
-                    stored_buckets[bucket] += 1
+                stored_buckets[bucket] += 1
         stored_buckets['sum'] += metric_value
 
         log.debug("The datapoint {} modified the histograms dictionary to: \n{}"
@@ -407,12 +580,41 @@ class DruidCollector(object):
                     cache_metrics[metric].add_metric([], self.counters[metric][daemon])
                 yield cache_metrics[metric]
 
+        # Metrics common to all
+        # for daemon in ['middlemanager', 'broker', 'historical', 'coordinator']:
+        #     generic_metrics = self._get_general_counters(daemon)
+        #
+        #     for metric in generic_metrics:
+        #         if not self.counters[metric] or daemon not in self.counters[metric]:
+        #             if not self.supported_metric_names[daemon][metric]:
+        #                 generic_metrics[metric].add_metric([], float('nan'))
+        #             else:
+        #                 continue
+        #         else:
+        #             labels = self.supported_metric_names[daemon][metric]
+        #             if not labels:
+        #                 generic_metrics[metric].add_metric(
+        #                     [], self.counters[metric][daemon])
+        #             elif len(labels) == 1:
+        #                 for label in self.counters[metric][daemon]:
+        #                     generic_metrics[metric].add_metric(
+        #                         [label], self.counters[metric][daemon][label])
+        #             else:
+        #                 for outer_label in self.counters[metric][daemon]:
+        #                     for inner_label in self.counters[metric][daemon][outer_label]:
+        #                         generic_metrics[metric].add_metric(
+        #                             [outer_label, inner_label],
+        #                             self.counters[metric][daemon][outer_label][inner_label])
+        #         yield generic_metrics[metric]
+
         historical_health_metrics = self._get_historical_counters()
         coordinator_metrics = self._get_coordinator_counters()
         realtime_metrics = self._get_realtime_counters()
+        broker_metrics = self._get_query_counters()
         for daemon, metrics in [('coordinator', coordinator_metrics),
                                 ('historical', historical_health_metrics),
-                                ('peon', realtime_metrics)]:
+                                ('peon', realtime_metrics),
+                                ('broker', broker_metrics)]:
             for metric in metrics:
                 if not self.counters[metric] or daemon not in self.counters[metric]:
                     if not self.supported_metric_names[daemon][metric]:
@@ -443,7 +645,7 @@ class DruidCollector(object):
         yield registered
 
     def register_datapoint(self, datapoint):
-        if (datapoint['feed'] != 'metrics'):
+        if datapoint['feed'] != 'metrics':
             log.debug("The following feed does not contain a datapoint, "
                       "dropping it: {}"
                       .format(datapoint))

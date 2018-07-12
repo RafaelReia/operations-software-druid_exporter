@@ -8,8 +8,8 @@ following the [Prometheus](https://prometheus.io) standards.
 The easiest way to run `druid_exporter` is via a virtualenv:
 
 ```
-  virtualenv .venv
-  .venv/bin/python setup.py install
+  LC_ALL="en_US.UTF-8" LC_CTYPE="en_US.UTF-8" LC_ALL="en_US.UTF-8" virtualenv -p python3 .venv
+  LC_ALL="en_US.UTF-8" LC_CTYPE="en_US.UTF-8" .venv/bin/python setup.py install
   .venv/bin/druid_exporter
 ```
 
