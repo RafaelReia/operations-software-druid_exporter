@@ -581,31 +581,31 @@ class DruidCollector(object):
                 yield cache_metrics[metric]
 
         # Metrics common to all
-        # for daemon in ['middlemanager', 'broker', 'historical', 'coordinator']:
-        #     generic_metrics = self._get_general_counters(daemon)
-        #
-        #     for metric in generic_metrics:
-        #         if not self.counters[metric] or daemon not in self.counters[metric]:
-        #             if not self.supported_metric_names[daemon][metric]:
-        #                 generic_metrics[metric].add_metric([], float('nan'))
-        #             else:
-        #                 continue
-        #         else:
-        #             labels = self.supported_metric_names[daemon][metric]
-        #             if not labels:
-        #                 generic_metrics[metric].add_metric(
-        #                     [], self.counters[metric][daemon])
-        #             elif len(labels) == 1:
-        #                 for label in self.counters[metric][daemon]:
-        #                     generic_metrics[metric].add_metric(
-        #                         [label], self.counters[metric][daemon][label])
-        #             else:
-        #                 for outer_label in self.counters[metric][daemon]:
-        #                     for inner_label in self.counters[metric][daemon][outer_label]:
-        #                         generic_metrics[metric].add_metric(
-        #                             [outer_label, inner_label],
-        #                             self.counters[metric][daemon][outer_label][inner_label])
-        #         yield generic_metrics[metric]
+        for daemon in ['middlemanager', 'broker', 'historical', 'coordinator']:
+            generic_metrics = self._get_general_counters(daemon)
+
+            for metric in generic_metrics:
+                if not self.counters[metric] or daemon not in self.counters[metric]:
+                    if not self.supported_metric_names[daemon][metric]:
+                        generic_metrics[metric].add_metric([], float('nan'))
+                    else:
+                        continue
+                else:
+                    labels = self.supported_metric_names[daemon][metric]
+                    if not labels:
+                        generic_metrics[metric].add_metric(
+                            [], self.counters[metric][daemon])
+                    elif len(labels) == 1:
+                        for label in self.counters[metric][daemon]:
+                            generic_metrics[metric].add_metric(
+                                [label], self.counters[metric][daemon][label])
+                    else:
+                        for outer_label in self.counters[metric][daemon]:
+                            for inner_label in self.counters[metric][daemon][outer_label]:
+                                generic_metrics[metric].add_metric(
+                                    [outer_label, inner_label],
+                                    self.counters[metric][daemon][outer_label][inner_label])
+                yield generic_metrics[metric]
 
         historical_health_metrics = self._get_historical_counters()
         coordinator_metrics = self._get_coordinator_counters()
