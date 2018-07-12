@@ -17,7 +17,7 @@ By default metrics are exposed on TCP port `8000`. Python 2 is not supported.
 
 ## Druid versions supported
 
-This exporter is tested and used by the Wikimedia foundation with Druid version 0.9.2,
+This exporter is forked from the Wikimedia foundation, now tested with druid 0.11.0
 so it might not work as expected for newer versions.
 
 ## How does it work?
@@ -25,7 +25,7 @@ so it might not work as expected for newer versions.
 Druid can be configured to emit metrics (JSON data) to a HTTP endpoint configured
 via the following runtime properties:
 
-http://druid.io/docs/0.9.2/configuration/index.html#http-emitter-module
+http://druid.io/docs/0.11.0/configuration/index.html#http-emitter-module
 
 The druid prometheus exporter accepts HTTP POST data, inspects it and stores/aggregates
 every supported datapoint into a data structure. It then formats the
@@ -85,7 +85,6 @@ use case (for the moment) is to use [Tranquillity](https://github.com/druid-io/t
 rather than Real Time nodes.
 
 Please check the following document for more info:
-http://druid.io/docs/0.9.2/operations/metrics.html
+http://druid.io/docs/0.11.0/operations/metrics.html
 
-The JVM metrics are currently not supported, please check other projects
-like https://github.com/prometheus/jmx_exporter if you need to collect them.
+Added JVM metrics, since we already have a JVM metrics exporter in place.
